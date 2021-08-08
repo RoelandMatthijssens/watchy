@@ -9,13 +9,12 @@ bool time_to_sleep(struct timeval woke_up_at){
   gettimeofday(&current, NULL);
   int64_t current_ms = timeval_to_millis(current);
   int64_t woke_up_ms = timeval_to_millis(woke_up_at);
-  /* log(current_ms - woke_up_ms); */
   return current_ms - woke_up_ms > SLEEP_TIMEOUT_MS;
 }
 
 void deepSleep(){
   Serial.println("Going to sleep");
-  esp_sleep_enable_ext1_wakeup(BTN_PIN_MASK, ESP_EXT1_WAKEUP_ANY_HIGH);
+  esp_sleep_enable_ext1_wakeup(WATCHY_BTN_PIN_MASK, ESP_EXT1_WAKEUP_ANY_HIGH);
   esp_deep_sleep_start();
 }
 
