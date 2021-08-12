@@ -7,7 +7,7 @@ void update_time( void *context_vp ){
   Context *context = (Context *) context_vp;
   while(1){
     context->watchface->current_time = context->time_manager->getTimeAsString("%H:%M:%S");
-    vTaskDelay( 15000 / portTICK_PERIOD_MS );
+    vTaskDelay( 100 / portTICK_PERIOD_MS );
   }
 }
 

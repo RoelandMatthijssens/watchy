@@ -13,7 +13,7 @@ void setup(){
   context.time_manager = new TimeManager();
   context.watchface = new Watchface();
 
-  xTaskCreate( render,      "render",      10000, &context, 1, NULL);
+  xTaskCreate( render,      "render",      10000, &context, 2, NULL);
   xTaskCreate( update_time, "update_time", 10000, &context, 1, NULL);
 
   vTaskDelete(NULL);
