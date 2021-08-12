@@ -1,8 +1,12 @@
-#include <Arduino.h>
-#include <GxEPD2_BW.h>
-#include <Fonts/FreeMonoBold9pt7b.h>
-#include "config.h"
-#include "TimeManager.h"
+#ifndef WATCHY_WATCHFACE_H
+#define WATCHY_WATCHFACE_H
 
-void full_update_watch_face();
-void partial_update_watch_face();
+#include <Arduino.h>
+
+class Watchface{
+public:
+  String current_time;
+  Watchface();
+};
+
+#endif
