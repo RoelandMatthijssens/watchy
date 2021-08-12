@@ -1,25 +1,23 @@
-#include <sys/time.h>
-#include <Button2.h>
-#include "config.h"
-#include "sleep.h"
+#include <Arduino.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "watchface.h"
-
-struct timeval woke_up_at;
+#include "TimeManager.h"
+#include "tasks/render.h"
+#include "tasks/update_time.h"
+#include "context.h"
 
 void setup(){
   Serial.begin(115200);
-  Serial.println("starting setup");
-  gettimeofday(&woke_up_at, NULL);
-  Serial.println("woke up at");
-  full_update_watch_face();
+  Context context;
+  context.time_manager = new TimeManager();
+  context.watchface = new Watchface();
+
+  xTaskCreate( render,      "render",      10000, &context, 1, NULL);
+  xTaskCreate( update_time, "update_time", 10000, &context, 1, NULL);
+
+  vTaskDelete(NULL);
 }
 
 void loop(){
-  Serial.println("im in your loop");
-  partial_update_watch_face();
-  sleep_if_needed(woke_up_at);
-}
-
-void debug() {
-  Serial.println("debugging");
 }

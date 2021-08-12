@@ -1,4 +1,3 @@
-
 #ifndef WATCHY_TIMEMANAGER_H
 #define WATCHY_TIMEMANAGER_H
 
@@ -24,5 +23,4 @@ public:
 
 };
 
-
-#endif //WATCHY_TIMEMANAGER_H
+#endif
