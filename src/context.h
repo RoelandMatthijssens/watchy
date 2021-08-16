@@ -10,6 +10,7 @@ public:
   TimeManager *time_manager;
   Watchface *watchface;
   GxEPD2_BW<GxEPD2_154_D67, GxEPD2_154_D67::HEIGHT> *display;
+  SemaphoreHandle_t display_mutex;
 };
 
 #endif

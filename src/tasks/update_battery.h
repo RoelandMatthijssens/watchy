@@ -12,6 +12,7 @@ String get_battery_level(){
 void render_battery_level(Context *context, String battery_level){
   int16_t  x_off, y_off;
   uint16_t w, h;
+
   context->display->getTextBounds(battery_level, 0, 0, &x_off, &y_off, &w, &h);
   int16_t x_pos = 50-w;
   int16_t y_pos = 50-h;
@@ -29,8 +30,11 @@ void render_battery_level(Context *context, String battery_level){
 void update_battery( void *context_vp ){
   Context *context = (Context *) context_vp;
   while(1){
-    render_battery_level(context, get_battery_level());
-    vTaskDelay( 1000 / portTICK_PERIOD_MS );
+    if(xSemaphoreTake(context->display_mutex, 0) == pdTRUE){
+      render_battery_level(context, get_battery_level());
+      xSemaphoreGive(context->display_mutex);
+    }
+    vTaskDelay( 10000 / portTICK_PERIOD_MS );
   }
 }
 
