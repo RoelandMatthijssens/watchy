@@ -17,7 +17,7 @@ TimeManager time_manager = TimeManager();
 static const adc1_channel_t BATTERY_READ_PIN = ADC1_GPIO33_CHANNEL;
 esp_adc_cal_characteristics_t *adc_chars = new esp_adc_cal_characteristics_t;
 
-void log_data(int timestamp, float voltage, float voltage2) {
+void log_data(int timestamp, double voltage, double voltage2) {
     HTTPClient http;
     String url = "https://roels.me/bat/index.php?id=log2&v=";
     url += voltage;
@@ -61,17 +61,32 @@ void setup(){
 
 }
 
-float getBatteryVoltage2(){
-    float analog = adc1_get_raw(BATTERY_READ_PIN);
-    return esp_adc_cal_raw_to_voltage(analog, adc_chars) * 2.0 / 1000.0;
+// 10 samples are made in a 1second period, and averaged
+// this is because the voltage fluctuates a bit
+double getBatteryVoltage2(){
+    double result = 0.0;
+    int analog;
+    for(int i = 0; i < 10; i++) {
+        delay(100);
+        analog = adc1_get_raw(BATTERY_READ_PIN);
+        result += esp_adc_cal_raw_to_voltage(analog, adc_chars) * 2.0 / 1000.0;
+    }
+    return result / 10.0;
 }
 
-float getBatteryVoltage(){
-    float analog = analogRead(WATCHY_ADC_PIN) / 4096.0 * 7.23;
-    return analog;
+// 10 samples are made in a 1second period, and averaged
+// this is because the voltage fluctuates a bit
+double getBatteryVoltage(){
+    double result = 0.0;
+    for(int i = 0; i < 10; i++) {
+        delay(100);
+        result += analogRead(WATCHY_ADC_PIN) / 4096.0 * 7.23;
+    }
+    return result / 10.0;
 }
 
 void loop(){
     log_data(0, getBatteryVoltage(), getBatteryVoltage2());
-    delay(10000);
+    delay(8000); // 8 sec because we already spent 2 seconds sampling
 }
+
