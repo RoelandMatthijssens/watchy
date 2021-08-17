@@ -61,32 +61,32 @@ void setup(){
 
 }
 
-// 10 samples are made in a 1second period, and averaged
-// this is because the voltage fluctuates a bit
-double getBatteryVoltage2(){
-    double result = 0.0;
-    int analog;
-    for(int i = 0; i < 10; i++) {
-        delay(100);
-        analog = adc1_get_raw(BATTERY_READ_PIN);
-        result += esp_adc_cal_raw_to_voltage(analog, adc_chars) * 2.0 / 1000.0;
-    }
-    return result / 10.0;
+
+double getBatteryVoltage(){
+    return analogRead(WATCHY_ADC_PIN) / 4096.0 * 7.23;
 }
 
-// 10 samples are made in a 1second period, and averaged
-// this is because the voltage fluctuates a bit
-double getBatteryVoltage(){
-    double result = 0.0;
-    for(int i = 0; i < 10; i++) {
-        delay(100);
-        result += analogRead(WATCHY_ADC_PIN) / 4096.0 * 7.23;
-    }
-    return result / 10.0;
+double getBatteryVoltage2(){
+    int analog = adc1_get_raw(BATTERY_READ_PIN);
+    return esp_adc_cal_raw_to_voltage(analog, adc_chars) * 2.0 / 1000.0;
 }
 
 void loop(){
-    log_data(0, getBatteryVoltage(), getBatteryVoltage2());
-    delay(8000); // 8 sec because we already spent 2 seconds sampling
+
+    // take <sample_count> samples over 1 second, and average them
+    // this eliminates some of the "random" fluctuations
+    int sample_count = 10;
+    double voltage1 = 0.0;
+    double voltage2 = 0.0;
+    for(int i = 0; i < sample_count; i++) {
+        voltage1 += getBatteryVoltage();
+        voltage2 += getBatteryVoltage2();
+        delay(1000 / sample_count);
+    }
+    voltage1 = voltage1 / (double)sample_count;
+    voltage2 = voltage2 / (double)sample_count;
+
+    log_data(0, voltage1, voltage2);
+    delay(9000); // 9 sec because we already spent 1 second sampling
 }
 
