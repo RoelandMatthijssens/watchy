@@ -13,16 +13,11 @@
 EsposWiFi wifi = EsposWiFi();
 EsposTime rtc_time = EsposTime();
 TimeManager time_manager = TimeManager();
-
-static const adc1_channel_t BATTERY_READ_PIN = ADC1_GPIO33_CHANNEL;
-esp_adc_cal_characteristics_t *adc_chars = new esp_adc_cal_characteristics_t;
+esp_adc_cal_characteristics_t adc_chars = esp_adc_cal_characteristics_t();
 
 void log_data(int timestamp, double voltage, double voltage2) {
     HTTPClient http;
-    String url = "https://roels.me/bat/index.php?id=log2&v=";
-    url += voltage;
-    url += "&v2=";
-    url += voltage2;
+    String url = "https://roels.me/bat/index.php?id=reinout&v=" + String(voltage) + "&v2=" + String(voltage2);
     http.begin(url.c_str());
     http.GET();
     http.end();
@@ -35,8 +30,8 @@ void setup(){
     // Configure ADC
     {
         adc1_config_width(ADC_WIDTH_BIT_12);
-        adc1_config_channel_atten(BATTERY_READ_PIN, ADC_ATTEN_DB_11);
-        esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, adc_chars);
+        adc1_config_channel_atten(ADC1_GPIO33_CHANNEL, ADC_ATTEN_DB_11);
+        esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, &adc_chars);
     }
 
     // Connect WiFi
@@ -56,19 +51,18 @@ void setup(){
         time_manager.setTime(ntp_result);
     }
 
-    // log dummy data to mark the setup() in the log
+    // log dummy data to mark this setup() in the log
     log_data(0, 0.0, 0.0);
 
 }
-
 
 double getBatteryVoltage(){
     return analogRead(WATCHY_ADC_PIN) / 4096.0 * 7.23;
 }
 
 double getBatteryVoltage2(){
-    int analog = adc1_get_raw(BATTERY_READ_PIN);
-    return esp_adc_cal_raw_to_voltage(analog, adc_chars) * 2.0 / 1000.0;
+    int analog = adc1_get_raw(ADC1_GPIO33_CHANNEL);
+    return esp_adc_cal_raw_to_voltage(analog, &adc_chars) * 2.0 / 1000.0;
 }
 
 void loop(){

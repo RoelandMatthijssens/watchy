@@ -28,44 +28,44 @@ analogRead(ADC_PIN) / 4096.0 * 7.23;
 
 These magic constants are used, because the ADC line expects voltages up to 3.3V, but our battery can provide more (up to 4.2V!). As this wouldn't allow us to read voltages above 3.3V, the signal is scaled down first. Most microcontroller board do this using a [voltage divider](https://en.wikipedia.org/wiki/Voltage_divider). As shown in the [Watchy schematics](https://watchy.sqfmi.com/docs/hardware), it looks like this for the Watchy:
 
-![Voltage divider](img/volt_div.png)
+<img src="img/volt_div.png" width="200">
 
 So to explain the magic constants above:
 
-* `analogRead()` returns a value between 0 and 4096, which maps to 0 and 3.3V respectively
-* The value read by `analogRead()` is half the actual voltage of the battery (it was scaled down by the divider)
-* One could rewrite the calculation as `((analogRead() / 4096) * 3.3) * 2` (normalise, map it to a range of 0-3300, and double it to compansate for voltage divider)
-* Apparently it's also required to compensate for the 1.1V ADC reference voltage, so the multiplication at the end becomes `3.3 * 2 * 1.1`, which gives us 7.26. This is more or less what is used in the original Watchy code.
+* `analogRead()` returns a value between 0 and 4096, which maps to a value between 0 and 3.3V
+* The value read by `analogRead()` is only half the actual voltage of the battery (it was scaled down by the divider)
+* One could rewrite the calculation as `((analogRead() / 4096) * 3.3) * 2` (normalise analog value, map it to a range of 0-3300, and double it to compensate for voltage divider)
+* It's also required to compensate for the 1.1V ADC reference voltage, so the multiplication at the end becomes `3.3 * 2 * 1.1`, which gives us 7.26. This is more or less what is used in the original Watchy code.
 * However, the ADC reference voltage is not exactly 1.1V, and differs between models, which explains the difference with the formula above.
 
 run `python3 ~/.platformio/packages/tool-esptoolpy/espefuse.py --port /dev/cu.SLAB_USBtoUART adc_info` if you want to know the value for your esp32. For me it was 1142mV.
 
 ## How Voltage is Read: ESP API
 
-```
+```C
 #include "esp_adc_cal.h"
 
 // variables
-static const adc1_channel_t BATTERY_READ_PIN = ADC1_GPIO33_CHANNEL;
-esp_adc_cal_characteristics_t *adc_chars = new esp_adc_cal_characteristics_t;
+esp_adc_cal_characteristics_t adc_chars = esp_adc_cal_characteristics_t();
 
 // setup
 adc1_config_width(ADC_WIDTH_BIT_12);
-adc1_config_channel_atten(BATTERY_READ_PIN, ADC_ATTEN_DB_11);
-esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, adc_chars);
+adc1_config_channel_atten(ADC1_GPIO33_CHANNEL, ADC_ATTEN_DB_11);
+esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, &adc_chars);
     
 // read voltage
-float getBatteryVoltage(){
-    float analog = adc1_get_raw(BATTERY_READ_PIN);
-    return esp_adc_cal_raw_to_voltage(analog, adc_chars) * 2.0 / 1000.0;
+float getBatteryVoltage() {
+    float analog = adc1_get_raw(ADC1_GPIO33_CHANNEL);
+    return esp_adc_cal_raw_to_voltage(analog, &adc_chars) * 2.0 / 1000.0;
 }
-
 ```
+
+Note that the return value of esp_adc_cal_raw_to_voltage() still has to be doubled to compensate for the voltage divider. The ESP32 itself is not even aware of the voltage division, as this is done by external hardware (resistors).
 
 ## Run the Experiment
 
 Make sure the battery is fully charged before you start. Then compile and flash the firmware (change WiFi credentials in the code). Unplug the USB cable right after flashing. Let it run until there are no more log entries coming in. 
-
+__
 ## Process Data
 
 The included `sample.py` will process the log file, and print a lookup table that maps voltage with battery capacity percentages. Change the "FILE_NAME" string to point to your downloaded log file. Change the "SAMPLES" value at the top of the script to determine how many rows you want in the lookup table. For example, `SAMPLES=5` will give a table with 20% increments (0%, 20%, 40%, 60%, 80% and 100%). Use `SAMPLES=100` for a table with all possible percentages. 
