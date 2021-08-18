@@ -19,7 +19,9 @@ percentage = 2808.3808 * pow(voltage, 4) - 43560.9157 * pow(voltage, 3) + 252848
 
 The included firmware connects the esp32 to WiFi, and publishes the battery voltage to a web page every 10 seconds. The included `index.php` captures the GET request and writes the voltage to a log on the server's side. A benefit of using WiFi is that the battery drains quite fast, as opposed to storing the log in flash memory. This helps to get a full discharge cycle in less time. 
 
-## How Voltage is Read: Original Code
+## How Voltage is Read
+
+### Option 1: Original Watchy code with magic multiplier
 
 In the original Watchy code the voltage is obtained by:
 ```
@@ -40,7 +42,7 @@ So to explain the magic constants above:
 
 run `python3 ~/.platformio/packages/tool-esptoolpy/espefuse.py --port /dev/cu.SLAB_USBtoUART adc_info` if you want to know the value for your esp32. For me it was 1142mV.
 
-## How Voltage is Read: ESP API
+### Option 2: ESP API
 
 ```C
 #include "esp_adc_cal.h"
@@ -55,7 +57,7 @@ esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, &a
     
 // read voltage
 float getBatteryVoltage() {
-    float analog = adc1_get_raw(ADC1_GPIO33_CHANNEL);
+    int analog = adc1_get_raw(ADC1_GPIO33_CHANNEL);
     return esp_adc_cal_raw_to_voltage(analog, &adc_chars) * 2.0 / 1000.0;
 }
 ```
@@ -65,7 +67,7 @@ Note that the return value of esp_adc_cal_raw_to_voltage() still has to be doubl
 ## Run the Experiment
 
 Make sure the battery is fully charged before you start. Then compile and flash the firmware (change WiFi credentials in the code). Unplug the USB cable right after flashing. Let it run until there are no more log entries coming in. 
-__
+
 ## Process Data
 
 The included `sample.py` will process the log file, and print a lookup table that maps voltage with battery capacity percentages. Change the "FILE_NAME" string to point to your downloaded log file. Change the "SAMPLES" value at the top of the script to determine how many rows you want in the lookup table. For example, `SAMPLES=5` will give a table with 20% increments (0%, 20%, 40%, 60%, 80% and 100%). Use `SAMPLES=100` for a table with all possible percentages. 
