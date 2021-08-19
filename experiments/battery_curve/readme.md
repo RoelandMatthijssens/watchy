@@ -64,6 +64,19 @@ float getBatteryVoltage() {
 
 Note that the return value of esp_adc_cal_raw_to_voltage() still has to be doubled to compensate for the voltage divider. The ESP32 itself is not even aware of the voltage division, as this is done by external hardware (resistors).
 
+To see how accurate this is, we measured the battery voltage with a multimeter (Brymen bm867s) at various times, and compared to the return value of the API.
+
+| Multimeter | ESP API | Difference |
+| ---------- | ------- | ---------- |
+| 4.208      | 4.18    | 0.66%      |
+| 4.039      | 4.01    | 0.72%      |
+| 3.913      | 3.90    | 0.33%      |
+| 3.820      | 3.80    | 0.52%      |
+| 3.771      | 3.75    | 0.56%      |
+| 3.767      | 3.74    | 0.71%      |
+| 3.634      | 3.60    | 0.94%      |
+| 3.514      | 3.48    | 0.97%      |
+
 ## Run the Experiment
 
 Make sure the battery is fully charged before you start. Then compile and flash the firmware (change WiFi credentials in the code). Unplug the USB cable right after flashing. Let it run until there are no more log entries coming in. 
