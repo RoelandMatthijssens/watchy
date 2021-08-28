@@ -30,7 +30,7 @@ analogRead(ADC_PIN) / 4096.0 * 7.23;
 
 These magic constants are used, because the ADC line expects voltages up to 3.3V, but our battery can provide more (up to 4.2V!). As this wouldn't allow us to read voltages above 3.3V, the signal is scaled down first. Most microcontroller board do this using a [voltage divider](https://en.wikipedia.org/wiki/Voltage_divider). As shown in the [Watchy schematics](https://watchy.sqfmi.com/docs/hardware), it looks like this for the Watchy:
 
-<img src="img/volt_div.png" width="200">
+<img src="img/volt_div.png" width="150">
 
 So to explain the magic constants above:
 
@@ -40,7 +40,7 @@ So to explain the magic constants above:
 * It's also required to compensate for the 1.1V ADC reference voltage, so the multiplication at the end becomes `3.3 * 2 * 1.1`, which gives us 7.26. This is more or less what is used in the original Watchy code.
 * However, the ADC reference voltage is not exactly 1.1V, and differs between models, which explains the difference with the formula above.
 
-run `python3 ~/.platformio/packages/tool-esptoolpy/espefuse.py --port /dev/cu.SLAB_USBtoUART adc_info` if you want to know the value for your esp32. For me it was 1142mV.
+run `python3 ~/.platformio/packages/tool-esptoolpy/espefuse.py --port /dev/cu.SLAB_USBtoUART adc_info` if you want to know the value for your esp32. For me it was 1142mV, but this seems to be wildly different between different Watchy.
 
 ### Option 2: ESP API
 
@@ -77,6 +77,10 @@ To see how accurate this is, we measured the battery voltage with a multimeter (
 | 3.634      | 3.60    | 0.94%      |
 | 3.514      | 3.48    | 0.97%      |
 
+Note that the battery was taken out of the Watchy to measure it. It was then put back, where the Watchy measured the voltage (before turning on WiFi etc.). Because of this setup, the Watchy consumes a tiny bit of battery while booting, which means that the differences in the table above are even smaller in reality. 
+
+Conclusion: the voltage reported by the ESP API is extremely close to the real voltage, and there is no need to investigate other methods.
+
 ## Run the Experiment
 
 Make sure the battery is fully charged before you start. Then compile and flash the firmware (change WiFi credentials in the code). Unplug the USB cable right after flashing. Let it run until there are no more log entries coming in. 
@@ -89,10 +93,24 @@ The output will also contain the approximation calculated with the formula menti
 
 ## Results
 
+See the included `log_original.txt` for the raw data produced by the PHP logging script. As discussed before, the data from the ESP API is by far the most accurate, so we ignore the other methods for now. Once plotted, the data from the ESP API follows the expected curve:
 
-## Todo
+<img src="img/discharge.jpg" width="700">
 
-Use esp_adc_cal_raw_to_voltage() to get voltage, as this should be more accurate.
+However, it should be noted that the Watchy rebooted when the voltage dropped under 3.20V, but then continued to upload a few more measurements. We concluded that the Watchy becomes unreliable (brown-out) at 3.20V, so we took this as a cut-off point and removed any later measurements from the data set (see `log_bounded.txt`).
 
-python3 ~/.platformio/packages/tool-esptoolpy/espefuse.py --port /dev/cu.SLAB_USBtoUART adc_info
-1142mV
+After running this through the included `sample.py`, with `SAMPLES=100`, we get a long table. Run the script yourself for the full table, but here is the C-style array (101 elements, with index 0 represting voltage at 0%, and index 100 representing voltage at 100% capacity):
+
+```
+[3.2,3.28,3.34,3.37,3.39,3.42,3.42,3.44,3.44,3.46,3.47,3.47,3.48,3.5,3.5,3.51,3.52,3.53,3.53,3.54,3.55,3.56,3.57,3.57,3.59,3.6,3.61,3.62,3.63,3.65,3.65,3.66,3.67,3.67,3.68,3.7,3.69,3.7,3.71,3.71,3.72,3.72,3.71,3.73,3.72,3.74,3.72,3.74,3.73,3.73,3.72,3.74,3.75,3.74,3.75,3.74,3.76,3.76,3.76,3.77,3.77,3.79,3.79,3.79,3.79,3.8,3.8,3.82,3.82,3.81,3.83,3.84,3.84,3.85,3.86,3.86,3.87,3.88,3.9,3.91,3.9,3.92,3.93,3.95,3.95,3.95,3.97,3.98,3.98,4.0,4.02,4.03,4.04,4.05,4.06,4.08,4.09,4.1,4.11,4.13,4.2]
+```
+
+Warning: due to fluctuations in the voltage, the values are not always in increasing order!
+
+## Conclusions
+
+* The ESP API is by far the most accurate way to measure battery voltage (the commonly used approximation function mention in the beginning doesn't even come close).
+* Voltage fluctuates quite heavily in the Watchy.
+* When voltage dips under 3.2V, the Watchy is not completely dead but it becomes unreliable (brown-outs).
+* Voltage hovers around 3.7V for a very long time (the flat plateau in the middle of the chart), making it difficult to guess how much power is left in the battery during this period. 
+

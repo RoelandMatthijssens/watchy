@@ -1,10 +1,10 @@
 
-FILE_NAME = "log.txt"
+FILE_NAME = "log_bounded.txt"
 
 # value between 1 and 100
 # e.g. SAMPLES = 5, you get table with voltages for 0%, 20%, 40%, 60%, 80% and 100% battery capacity
 # e.g. SAMPLES = 100, you get table for every percentage of battery capacity
-SAMPLES = 5
+SAMPLES = 100
 
 def guess_percentage(voltage):
 	if (voltage > 4.19):
@@ -20,15 +20,19 @@ def guess_percentage(voltage):
 
 file = open(FILE_NAME, "r")
 lines = file.readlines()
-table_format = "{0}\t{1}\t{2}\t{3}\t{4}%"
+table_format = "{0}\t{1}\t{2}\t{3}%"
 
-print(table_format.format("%", "volt", "volt2", "time", "estimated"))
+c_array = "["
+print(table_format.format("%", "volt", "time", "estimated"))
 print("-------------------------------------------")
 for percentage in range(0, 101, int(100/SAMPLES)): 
-	line_index = round((1-(percentage/100))*(len(lines)-1))
-	timestamp = lines[line_index].strip().split(",")[0]
-	voltage = float(lines[line_index].strip().split(",")[1])
-	voltage2 = float(lines[line_index].strip().split(",")[2])
+	line_index = int(round((1-(percentage/100))*(len(lines)-1)))
+	line_pieces = lines[line_index].strip().split(",")
+	timestamp = line_pieces[0]
+	voltage = float(line_pieces[2])
 	approx_percentage = guess_percentage(voltage)
-	print(table_format.format(percentage, voltage, voltage2, timestamp, approx_percentage))
+	print(table_format.format(percentage, voltage, timestamp, approx_percentage))
+	c_array += str(voltage) + ","
 
+c_array += "]"
+print(c_array)
